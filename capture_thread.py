@@ -14,17 +14,17 @@ class CaptureThread(qtc.QThread):
         MASKCOUNT  = 2
 
 
-    def __init__(self, cameraID, lock):
+    def __init__(self, cameraID, lock, videoPath = ""):
         super().__init__() 
         self.running = False
         self.cameraID = cameraID
-        self.videoPath = ""
+        self.videoPath = videoPath
         self.dataLock = lock
         self.takingPhoto = False
         self.frameHeight = 0 
         self.frameWidth = 0 
         self.maskFlag = 0 
-        self.cameraMode = 0 
+        self.cameraMode = 1 
         self.videoMode = 0
         self.__loadOrnames()
         
@@ -32,19 +32,21 @@ class CaptureThread(qtc.QThread):
 
     
     @classmethod
-    def fromVideoPath(self, videoPath, lock):
-        super().__init__()
-        self.running = False
-        self.cameraID = -1
-        self.videoPath = videoPath
-        self.dataLock = lock 
-        self.takingPhoto = False
-        self.frameHeight = 0 
-        self.frameWidth = 0 
-        self.maskFlag = 0 
-        self.cameraMode = 0 
-        self.videoMode = 0
-        self.__loadOrnames()
+    def fromVideoPath(cls, videoPath, lock):
+        #super(qtc.QThread).__init__()
+        #self.running = False
+        #self.cameraID = -1
+        #self.videoPath = videoPath
+        #self.dataLock = lock 
+        #self.takingPhoto = False
+        #self.frameHeight = 0 
+        #self.frameWidth = 0 
+        #self.maskFlag = 0 
+        #self.cameraMode = 0 
+        #self.videoMode = 1
+        #self.__loadOrnames()
+        return cls(-1,lock, videoPath)  
+    
 
 
     def setRunning(self, run):
@@ -73,38 +75,39 @@ class CaptureThread(qtc.QThread):
         return (self.maskFlag&(1<<MASK_TYPE))!=0 
     
     def run(self):
-        if self.cameraMode:
-            self.running = True
-            cap = cv2.VideoCapture(self.cameraID,cv2.CAP_DSHOW)
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
-            cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
-            frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT);
-            frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH);
-            self.classifier = cv2.CascadeClassifier(config.OPENCV_DATA_PATH+config.HASS_FRONTAL_FACE)
-            #markDetector = cv2.face.createFacemarkLBF();
-            while (self.running):
-                #print(self.maskFlag)
-                ret,tmp_frame = cap.read()
-                if ret:
-                    if(self.maskFlag>0):
-                        self.__detectFaces(tmp_frame)
-
-                    tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
-                    h, w, ch = tmp_frame.shape
-                    bytesPerLine = ch * w
-                    self.dataLock.lock()
-                    convertToQtFormat = qtg.QImage(tmp_frame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
-                    self.dataLock.unlock()
-                    self.frameCapturedSgn.emit(convertToQtFormat)
-            cap.release()
-            cv2.destroyAllWindows()
-            self.running = False
-            print("end run ")
-        
+        cap = None
+        self.running = True
         if self.videoMode:
-            self.running = True 
-            
+            cap = cv2.VideoCapture(self.videoPath,cv2.CAP_DSHOW)
+        elif self.cameraMode:
+            cap = cv2.VideoCapture(self.cameraID,cv2.CAP_DSHOW)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
+        frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT);
+        frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH);
+        self.classifier = cv2.CascadeClassifier(config.OPENCV_DATA_PATH+config.HASS_FRONTAL_FACE)
+        #markDetector = cv2.face.createFacemarkLBF();
+        while (self.running):
+            #print(self.maskFlag)
+            ret,tmp_frame = cap.read()
+            if ret:
+                if(self.maskFlag>0):
+                    self.__detectFaces(tmp_frame)
+
+                tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = tmp_frame.shape
+                bytesPerLine = ch * w
+                self.dataLock.lock()
+                convertToQtFormat = qtg.QImage(tmp_frame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
+                self.dataLock.unlock()
+                self.frameCapturedSgn.emit(convertToQtFormat)
+        cap.release()
+        cv2.destroyAllWindows()
+        self.running = False
+        print("end run ")
+        
+
 
 
 

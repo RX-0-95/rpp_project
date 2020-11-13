@@ -109,6 +109,16 @@ class MainWindow(qtw.QMainWindow):
         fileName, _ = qtw.QFileDialog.getOpenFileName(self, "Open Movie",
         qtc.QDir.homePath())
         #send the file name to the capture thread 
+        for i in range(0, ct.MASK_TYPE.MASKCOUNT):
+            self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
+        if self.capturer != None:
+            self.capturer.setRunning(False)
+        self.capturer = ct.fromVideoPath(fileName,self.lock)
+
+        self.capturer.frameCapturedSgn.connect(self.__updateFrame)
+        self.capturer.start()
+        self.mainLabel.setText("Playing video" + str(fileName))
+        
 
 
        
