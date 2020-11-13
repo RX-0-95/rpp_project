@@ -24,6 +24,8 @@ class CaptureThread(qtc.QThread):
         self.frameHeight = 0 
         self.frameWidth = 0 
         self.maskFlag = 0 
+        self.cameraMode = 0 
+        self.videoMode = 0
         self.__loadOrnames()
         
          
@@ -40,13 +42,22 @@ class CaptureThread(qtc.QThread):
         self.frameHeight = 0 
         self.frameWidth = 0 
         self.maskFlag = 0 
+        self.cameraMode = 0 
+        self.videoMode = 0
         self.__loadOrnames()
 
 
     def setRunning(self, run):
         self.running = True
 
+    def setCameraMode(self):
+        self.cameraMode = True
+        self.videoMode = False
     
+    def setVideoMode(self):
+        self.cameraMode = False
+        self.videoMode = True 
+        
     def updateMaskFlag(self,type, on_or_off):
         bit = 1<<type
 
@@ -56,39 +67,44 @@ class CaptureThread(qtc.QThread):
             self.maskFlag &=~bit 
         print(self.maskFlag)
     
+    
+
     def isMaskOn(self, MASK_TYPE):
         return (self.maskFlag&(1<<MASK_TYPE))!=0 
     
     def run(self):
-        
-        self.running = True
-        cap = cv2.VideoCapture(self.cameraID,cv2.CAP_DSHOW)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
-        frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT);
-        frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH);
-        self.classifier = cv2.CascadeClassifier(config.OPENCV_DATA_PATH+config.HASS_FRONTAL_FACE)
-        #markDetector = cv2.face.createFacemarkLBF();
-        while (self.running):
-            #print(self.maskFlag)
-            ret,tmp_frame = cap.read()
-            if ret:
-                if(self.maskFlag>0):
-                    self.__detectFaces(tmp_frame)
+        if self.cameraMode:
+            self.running = True
+            cap = cv2.VideoCapture(self.cameraID,cv2.CAP_DSHOW)
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
+            frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT);
+            frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH);
+            self.classifier = cv2.CascadeClassifier(config.OPENCV_DATA_PATH+config.HASS_FRONTAL_FACE)
+            #markDetector = cv2.face.createFacemarkLBF();
+            while (self.running):
+                #print(self.maskFlag)
+                ret,tmp_frame = cap.read()
+                if ret:
+                    if(self.maskFlag>0):
+                        self.__detectFaces(tmp_frame)
 
-                tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = tmp_frame.shape
-                bytesPerLine = ch * w
-                self.dataLock.lock()
-                convertToQtFormat = qtg.QImage(tmp_frame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
-                self.dataLock.unlock()
-                self.frameCapturedSgn.emit(convertToQtFormat)
+                    tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
+                    h, w, ch = tmp_frame.shape
+                    bytesPerLine = ch * w
+                    self.dataLock.lock()
+                    convertToQtFormat = qtg.QImage(tmp_frame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
+                    self.dataLock.unlock()
+                    self.frameCapturedSgn.emit(convertToQtFormat)
+            cap.release()
+            cv2.destroyAllWindows()
+            self.running = False
+            print("end run ")
         
-        cap.release()
-        cv2.destroyAllWindows()
-        self.running = False
-        print("end run ")
+        if self.videoMode:
+            self.running = True 
+            
 
 
 

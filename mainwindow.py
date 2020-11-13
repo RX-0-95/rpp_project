@@ -108,6 +108,8 @@ class MainWindow(qtw.QMainWindow):
         #dialog.setFileMode(qtw.QFileDialog.AnyFile)
         fileName, _ = qtw.QFileDialog.getOpenFileName(self, "Open Movie",
         qtc.QDir.homePath())
+        #send the file name to the capture thread 
+
 
        
 
@@ -129,10 +131,11 @@ class MainWindow(qtw.QMainWindow):
         if self.capturer != None:
             self.capturer.setRunning(False)
         
-        cameraID = 0
+        cameraID = 1
         self.capturer = ct(cameraID,self.lock)
         
         self.capturer.frameCapturedSgn.connect(self.__updateFrame)
+        self.capturer.setCameraMode()
         self.capturer.start()
         self.mainLabel.setText("Capturing Camera" + str(cameraID))
 
