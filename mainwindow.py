@@ -11,6 +11,7 @@ from capture_thread import CaptureThread as ct
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
         super().__init__() 
+        self.setWindowTitle("rPPG")
         self.capturer = None 
         self.initUI()
         # self.setStyleSheet("background-color: 'black")
@@ -101,11 +102,14 @@ class MainWindow(qtw.QMainWindow):
     ############TODO: add file open function#######################
     def __openFile(self):
         print("Open")
-        dialog = qtw.QFileDialog(self, "Open Folder")
-        dialog.setDirectory(self.book_folder_path)
-        dialog.setAcceptMode(qtw.QFileDialog.AcceptOpen)
-        dialog.setFileMode(qtw.QFileDialog.AnyFile)
-        
+        #dialog= qtw.QFileDialog(self, "Open Folder")
+        #dialog.setDirectory(self.book_folder_path)
+        #dialog.setAcceptMode(qtw.QFileDialog.AcceptOpen)
+        #dialog.setFileMode(qtw.QFileDialog.AnyFile)
+        fileName, _ = qtw.QFileDialog.getOpenFileName(self, "Open Movie",
+        qtc.QDir.homePath())
+
+       
 
     def __showCameraInfo(self):
         print("Show Camera Info")
