@@ -4,9 +4,11 @@ from PyQt5 import QtGui as qtg
 from enum import IntEnum
 import cv2
 import config 
+from numpy import ndarray 
 class CaptureThread(qtc.QThread):
     
-    frameCapturedSgn = qtc.pyqtSignal(qtg.QImage)
+    #frameCapturedSgn = qtc.pyqtSignal(qtg.QImage)
+    frameCapturedSgn = qtc.pyqtSignal(ndarray)
     photoTakenSgn = qtc.pyqtSignal(str)
     class MASK_TYPE(IntEnum):
         RECTANGLE = 0,
@@ -14,11 +16,11 @@ class CaptureThread(qtc.QThread):
         MASKCOUNT  = 2
 
 
-    def __init__(self, cameraID, lock, videoPath = ""):
+    def __init__(self, cameraID, lock):
         super().__init__() 
         self.running = False
         self.cameraID = cameraID
-        self.videoPath = videoPath
+        self.videoPath = ""
         self.dataLock = lock
         self.takingPhoto = False
         self.frameHeight = 0 
@@ -45,8 +47,14 @@ class CaptureThread(qtc.QThread):
         #self.cameraMode = 0 
         #self.videoMode = 1
         #self.__loadOrnames()
-        return cls(-1,lock, videoPath)  
-    
+        obj = cls(-1,lock) 
+        obj.setVideoPath(videoPath)
+        return obj
+
+    def setVideoPath(self, videoPath):
+        self.videoPath = videoPath
+        self.setVideoMode()
+        
 
 
     def setRunning(self, run):
@@ -78,7 +86,7 @@ class CaptureThread(qtc.QThread):
         cap = None
         self.running = True
         if self.videoMode:
-            cap = cv2.VideoCapture(self.videoPath,cv2.CAP_DSHOW)
+            cap = cv2.VideoCapture(self.videoPath)
         elif self.cameraMode:
             cap = cv2.VideoCapture(self.cameraID,cv2.CAP_DSHOW)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
@@ -96,12 +104,15 @@ class CaptureThread(qtc.QThread):
                     self.__detectFaces(tmp_frame)
 
                 tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = tmp_frame.shape
-                bytesPerLine = ch * w
+                #h, w, ch = tmp_frame.shape
+                #bytesPerLine = ch * w
+                #print(type(tmp_frame))
+                #tmp_frame = qtg.QImage(tmp_frame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
                 self.dataLock.lock()
-                convertToQtFormat = qtg.QImage(tmp_frame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
+                frame = tmp_frame
                 self.dataLock.unlock()
-                self.frameCapturedSgn.emit(convertToQtFormat)
+                self.frameCapturedSgn.emit(frame)
+                print("send frame")
         cap.release()
         cv2.destroyAllWindows()
         self.running = False

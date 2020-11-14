@@ -7,7 +7,7 @@ from os import path
 from PyQt5.QtCore import pyqtSlot
 import cv2
 from capture_thread import CaptureThread as ct
-
+from numpy import ndarray
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
         super().__init__() 
@@ -108,6 +108,7 @@ class MainWindow(qtw.QMainWindow):
         #dialog.setFileMode(qtw.QFileDialog.AnyFile)
         fileName, _ = qtw.QFileDialog.getOpenFileName(self, "Open Movie",
         qtc.QDir.homePath())
+        print(fileName)
         #send the file name to the capture thread 
         for i in range(0, ct.MASK_TYPE.MASKCOUNT):
             self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
@@ -141,7 +142,7 @@ class MainWindow(qtw.QMainWindow):
         if self.capturer != None:
             self.capturer.setRunning(False)
         
-        cameraID = 1
+        cameraID = 0
         self.capturer = ct(cameraID,self.lock)
         
         self.capturer.frameCapturedSgn.connect(self.__updateFrame)
@@ -149,16 +150,26 @@ class MainWindow(qtw.QMainWindow):
         self.capturer.start()
         self.mainLabel.setText("Capturing Camera" + str(cameraID))
 
-    @pyqtSlot(qtg.QImage)
+    #@pyqtSlot(qtg.QImage)
+    @pyqtSlot(ndarray)
     def __updateFrame(self,image):
+        
         self.lock.lock()
-        currentFrame = image 
+        #currentFrame = image.scaled(self.imageView.width()-10, self.imageView.height()-10,qtc.Qt.KeepAspectRatio)
+        currentFrame = image
         self.lock.unlock()
+        #frame = qtg.QImage
+
+        h, w, ch = currentFrame.shape
+        bytesPerLine = ch * w
+        #print(type(tmp_frame))
+        currentFrame = qtg.QImage(currentFrame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
         pixel_map = qtg.QPixmap(currentFrame)
         self.imagScene.clear()
         self.imagScene.addPixmap(pixel_map)
         self.imagScene.update()
         self.imageView.setSceneRect(qtc.QRectF(pixel_map.rect()))
+    
 
 
 
@@ -172,10 +183,6 @@ class MainWindow(qtw.QMainWindow):
             if(self.maskCheckBox[i]==self.sender()):
                 self.capturer.updateMaskFlag(ct.MASK_TYPE(i), status !=0)
                 
-        
-
-
-
 
         
 def main():
