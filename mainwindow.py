@@ -61,10 +61,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.maskCheckBox[0].setText("Rectangle")
         self.maskCheckBox[1].setText("LandMarks")
-
-
-
-
+        self.maskCheckBox[2].setText("rPPG")
 
         #set main_layout to central widget 
         widget = qtw.QWidget(self)
@@ -146,11 +143,13 @@ class MainWindow(qtw.QMainWindow):
         self.capturer = ct(cameraID,self.lock)
         
         self.capturer.frameCapturedSgn.connect(self.__updateFrame)
+        #self.capturer.faceCapturedSgn.connect(self.__updateFrame)
+        #self.capturer.faceCapturedSgn.connect(self.__updateFrame)
         self.capturer.setCameraMode()
         self.capturer.start()
         self.mainLabel.setText("Capturing Camera" + str(cameraID))
 
-    #@pyqtSlot(qtg.QImage)
+  
     @pyqtSlot(ndarray)
     def __updateFrame(self,image):
         
@@ -162,8 +161,7 @@ class MainWindow(qtw.QMainWindow):
 
         h, w, ch = currentFrame.shape
         bytesPerLine = ch * w
-        #print(type(tmp_frame))
-        currentFrame = qtg.QImage(currentFrame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
+        currentFrame = qtg.QImage(currentFrame.data.tobytes(), w, h, bytesPerLine, qtg.QImage.Format_RGB888)
         pixel_map = qtg.QPixmap(currentFrame)
         self.imagScene.clear()
         self.imagScene.addPixmap(pixel_map)
