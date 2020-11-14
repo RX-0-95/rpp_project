@@ -104,15 +104,11 @@ class CaptureThread(qtc.QThread):
                     self.__detectFaces(tmp_frame)
 
                 tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
-                #h, w, ch = tmp_frame.shape
-                #bytesPerLine = ch * w
-                #print(type(tmp_frame))
-                #tmp_frame = qtg.QImage(tmp_frame.data, w, h, bytesPerLine, qtg.QImage.Format_RGB888)
                 self.dataLock.lock()
                 frame = tmp_frame
                 self.dataLock.unlock()
                 self.frameCapturedSgn.emit(frame)
-                print("send frame")
+               
         cap.release()
         cv2.destroyAllWindows()
         self.running = False
