@@ -80,7 +80,7 @@ class MainWindow(qtw.QMainWindow):
 
 
     def __createAction(self):
-        self.openFileAction = qtw.QAction("&Open")
+        self.openFileAction = qtw.QAction("&Open Video File")
         self.fileMenu.addAction(self.openFileAction)
 
         self.showCameraInfoAction = qtw.QAction("Camera &Information")
@@ -98,7 +98,7 @@ class MainWindow(qtw.QMainWindow):
 
     ############TODO: add file open function#######################
     def __openFile(self):
-        print("Open")
+        print("Open Video File")
         #dialog= qtw.QFileDialog(self, "Open Folder")
         #dialog.setDirectory(self.book_folder_path)
         #dialog.setAcceptMode(qtw.QFileDialog.AcceptOpen)
