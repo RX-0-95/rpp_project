@@ -142,8 +142,8 @@ class MainWindow(qtw.QMainWindow):
         cameraID = 0
         self.capturer = ct(cameraID,self.lock)
         
-        self.capturer.frameCapturedSgn.connect(self.__updateFrame)
-        #self.capturer.faceCapturedSgn.connect(self.__updateFrame)
+        #self.capturer.frameCapturedSgn.connect(self.__updateFrame)
+        self.capturer.faceCapturedSgn.connect(self.__updateFrame)
         #self.capturer.faceCapturedSgn.connect(self.__updateFrame)
         self.capturer.setCameraMode()
         self.capturer.start()

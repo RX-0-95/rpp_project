@@ -86,7 +86,7 @@ class CaptureThread(qtc.QThread):
         frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT);
         frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH);
         self.classifier = cv2.CascadeClassifier(config.OPENCV_DATA_PATH+config.HASS_FRONTAL_FACE)
-        rppgAlg = rppg() 
+        rppgAlg = rppg.rppgInstance()
 
         #markDetector = cv2.face.createFacemarkLBF();
         while (self.running):
