@@ -85,11 +85,12 @@ class CaptureThread(qtc.QThread):
         self.running = True
         if self.videoMode:
             cap = cv2.VideoCapture(self.videoPath)
+            
         elif self.cameraMode:
             cap = cv2.VideoCapture(self.cameraID,cv2.CAP_DSHOW)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
         frame_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT);
         frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH);
         self.classifier = cv2.CascadeClassifier(config.OPENCV_DATA_PATH+config.HASS_FRONTAL_FACE)
@@ -101,11 +102,15 @@ class CaptureThread(qtc.QThread):
                 ret,tmp_frame = cap.read()
                 tmp_face_crop = None
                 face_find = False
+                tmp_frame = cv2.rotate(tmp_frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
                 if ret:
                     if(self.maskFlag>0):
                         face_find, face_rects = self.__detectFaces(tmp_frame)
                             
                     tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
+                    #Temparty: rotate frame -90 degree
+                    
+                    #######################
                     if face_find:
                         x,y,w,h = face_rects[0]
                         tmp_face_crop= tmp_frame[y:y+h, x:x+w]
