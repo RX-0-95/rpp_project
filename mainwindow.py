@@ -108,8 +108,8 @@ class MainWindow(qtw.QMainWindow):
         qtc.QDir.homePath())
         print(fileName)
         #send the file name to the capture thread 
-        #for i in range(0, ct.MASK_TYPE.MASKCOUNT):
-        #    self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
+        for i in range(0, ct.MASK_TYPE.MASKCOUNT):
+            self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
         
         if self.capturer != None:
             self.capturer.setRunning(False)
@@ -138,8 +138,8 @@ class MainWindow(qtw.QMainWindow):
 
     def __openCamera(self):
         print("openCamera") 
-        #for i in range(0, ct.MASK_TYPE.MASKCOUNT):
-        #    self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
+        for i in range(0, ct.MASK_TYPE.MASKCOUNT):
+            self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
         if self.capturer != None:
             self.capturer.setRunning(False)
         

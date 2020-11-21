@@ -137,7 +137,7 @@ class CaptureThread(qtc.QThread):
         isFaceFind = False
         faces = [] 
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces=self.classifier.detectMultiScale(gray_frame,1.6,6);
+        faces=self.classifier.detectMultiScale(gray_frame,1.1,8);
         if len(faces): 
             isFaceFind = True 
         if (self.isMaskOn(self.MASK_TYPE.RECTANGLE)):
