@@ -6,11 +6,13 @@ import cv2
 import config 
 from numpy import ndarray 
 from rppg import * 
+from timer import timer 
 class CaptureThread(qtc.QThread):
     
     #frameCapturedSgn = qtc.pyqtSignal(qtg.QImage)
     frameCapturedSgn = qtc.pyqtSignal(ndarray)
     faceCapturedSgn = qtc.pyqtSignal(ndarray)
+    faceCapturedFpsSgn = qtc.pyqtSignal(float)
     photoTakenSgn = qtc.pyqtSignal(str)
     class MASK_TYPE(IntEnum):
         RECTANGLE = 0,
@@ -87,8 +89,12 @@ class CaptureThread(qtc.QThread):
         frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH);
         self.classifier = cv2.CascadeClassifier(config.OPENCV_DATA_PATH+config.HASS_FRONTAL_FACE)
         rppgAlg = rppg.rppgInstance()
-
         #markDetector = cv2.face.createFacemarkLBF();
+        frame_timer = timer.timerInstance() 
+        frame_timer.start()
+
+        #write to video 
+        #self.write_video = cv2.VideoWriter("face_crop.avi", cv2.VideoWriter_fourcc('M','J','P','G'), 18, (300,300))
         while (self.running):
             #print(self.maskFlag)
             ret,tmp_frame = cap.read()
@@ -96,24 +102,32 @@ class CaptureThread(qtc.QThread):
             face_find = False
             if ret:
                 if(self.maskFlag>0):
-                    face_find, face_rects = self.__detectFaces(tmp_frame)
-                        
+                    face_find, face_rects = self.__detectFaces(tmp_frame)   
                 tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
                 if face_find:
                     x,y,w,h = face_rects[0]
                     tmp_face_crop= tmp_frame[y:y+h, x:x+w]
+                    tmp_face_crop = cv2.resize(tmp_face_crop, (300,300))
+                    #self.write_video.write(tmp_face_crop)
                     #print(type(tmp_face_crop))
                     if (self.isMaskOn(self.MASK_TYPE.RPPG)):
-                        rppgAlg.s2r(tmp_face_crop)
+                        face_detect_rate = 1.0/frame_timer.timeElapsed()
+                        rppgAlg.s2r(tmp_face_crop, face_detect_rate)
+
                 self.dataLock.lock()
                 frame = tmp_frame
                 face_crop = tmp_face_crop
                 self.dataLock.unlock()
                 self.frameCapturedSgn.emit(frame)
+                
                 if face_find:
                     self.faceCapturedSgn.emit(face_crop)
+                    
+                    #self.faceCapturedFpsSgn.emit(1/frame_timer.time_elapsed)
+                    #print(frame_timer.timeElapsed())
 
         cap.release()
+        #self.write_video.release()
         cv2.destroyAllWindows()
         self.running = False
         print("end run ")
@@ -130,7 +144,7 @@ class CaptureThread(qtc.QThread):
         isFaceFind = False
         faces = [] 
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces=self.classifier.detectMultiScale(gray_frame,1.6,6);
+        faces=self.classifier.detectMultiScale(gray_frame,1.1,5);
         if len(faces): 
             isFaceFind = True 
         if (self.isMaskOn(self.MASK_TYPE.RECTANGLE)):
