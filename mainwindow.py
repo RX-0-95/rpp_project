@@ -41,9 +41,10 @@ class MainWindow(qtw.QMainWindow):
 
         #Layout 
         self.toolsLayout = qtw.QGridLayout()
-        self.detectHearRateBtn = qtw.QPushButton(self)
-        self.detectHearRateBtn.setText("Take Heart Rate")
-        self.toolsLayout.addWidget(self.detectHearRateBtn,0,0,qtc.Qt.AlignCenter)
+        self.startVideoPlayBtn = qtw.QPushButton(self)
+        self.startVideoPlayBtn.setText("Start video")
+        self.startVideoPlayBtn.setCheckable(True)
+        self.toolsLayout.addWidget(self.startVideoPlayBtn,0,0,qtc.Qt.AlignCenter)
         self.mainLayout.addLayout(self.toolsLayout,12,0,1,1)
         
 
@@ -107,13 +108,16 @@ class MainWindow(qtw.QMainWindow):
         qtc.QDir.homePath())
         print(fileName)
         #send the file name to the capture thread 
-        for i in range(0, ct.MASK_TYPE.MASKCOUNT):
-            self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
+        #for i in range(0, ct.MASK_TYPE.MASKCOUNT):
+        #    self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
+        
         if self.capturer != None:
             self.capturer.setRunning(False)
         self.capturer = ct.fromVideoPath(fileName,self.lock)
-
         self.capturer.frameCapturedSgn.connect(self.__updateFrame)
+        self.startVideoPlayBtn.setChecked(False)
+        self.startVideoPlayBtn.toggled.connect(self.capturer.tooglePlayVideo)
+        self.startVideoPlayBtn.toggled.connect(lambda x : self.__onStartVideoBtnToggle(x))
         self.capturer.start()
         self.mainLabel.setText("Playing video" + str(fileName))
         
@@ -134,16 +138,16 @@ class MainWindow(qtw.QMainWindow):
 
     def __openCamera(self):
         print("openCamera") 
-        for i in range(0, ct.MASK_TYPE.MASKCOUNT):
-            self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
+        #for i in range(0, ct.MASK_TYPE.MASKCOUNT):
+        #    self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
         if self.capturer != None:
             self.capturer.setRunning(False)
         
         cameraID = 0
         self.capturer = ct(cameraID,self.lock)
         
-        #self.capturer.frameCapturedSgn.connect(self.__updateFrame)
-        self.capturer.faceCapturedSgn.connect(self.__updateFrame)
+        self.capturer.frameCapturedSgn.connect(self.__updateFrame)
+        #self.capturer.faceCapturedSgn.connect(self.__updateFrame)
         #self.capturer.faceCapturedSgn.connect(self.__updateFrame)
         self.capturer.setCameraMode()
         self.capturer.start()
@@ -169,8 +173,13 @@ class MainWindow(qtw.QMainWindow):
         self.imageView.setSceneRect(qtc.QRectF(pixel_map.rect()))
     
 
-
-
+    @pyqtSlot()
+    def __onStartVideoBtnToggle(self, state):
+        if not state:
+            self.startVideoPlayBtn.setText("Start Video")
+        else:
+            self.startVideoPlayBtn.setText("pause")
+        
     @pyqtSlot(int)
     def updateMask(self, status):
         print("updateMask")

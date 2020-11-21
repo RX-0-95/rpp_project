@@ -31,6 +31,7 @@ class CaptureThread(qtc.QThread):
         self.maskFlag = 0 
         self.cameraMode = 1 
         self.videoMode = 0
+        self.playVideo = True
         self.__loadOrnames()
         
          
@@ -40,13 +41,19 @@ class CaptureThread(qtc.QThread):
     def fromVideoPath(cls, videoPath, lock):
         obj = cls(-1,lock) 
         obj.setVideoPath(videoPath)
+        obj.setPlayVideo(False)
         return obj
 
     def setVideoPath(self, videoPath):
         self.videoPath = videoPath
         self.setVideoMode()
-        
 
+    @pyqtSlot(bool)        
+    def setPlayVideo(self, bool):
+        self.playVideo = bool
+    @pyqtSlot()
+    def tooglePlayVideo(self):
+        self.playVideo = not self.playVideo 
 
     def setRunning(self, run):
         self.running = True
@@ -90,28 +97,28 @@ class CaptureThread(qtc.QThread):
 
         #markDetector = cv2.face.createFacemarkLBF();
         while (self.running):
-            #print(self.maskFlag)
-            ret,tmp_frame = cap.read()
-            tmp_face_crop = None
-            face_find = False
-            if ret:
-                if(self.maskFlag>0):
-                    face_find, face_rects = self.__detectFaces(tmp_frame)
-                        
-                tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
-                if face_find:
-                    x,y,w,h = face_rects[0]
-                    tmp_face_crop= tmp_frame[y:y+h, x:x+w]
-                    #print(type(tmp_face_crop))
-                    if (self.isMaskOn(self.MASK_TYPE.RPPG)):
-                        rppgAlg.s2r(tmp_face_crop)
-                self.dataLock.lock()
-                frame = tmp_frame
-                face_crop = tmp_face_crop
-                self.dataLock.unlock()
-                self.frameCapturedSgn.emit(frame)
-                if face_find:
-                    self.faceCapturedSgn.emit(face_crop)
+            if self.playVideo:
+                ret,tmp_frame = cap.read()
+                tmp_face_crop = None
+                face_find = False
+                if ret:
+                    if(self.maskFlag>0):
+                        face_find, face_rects = self.__detectFaces(tmp_frame)
+                            
+                    tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
+                    if face_find:
+                        x,y,w,h = face_rects[0]
+                        tmp_face_crop= tmp_frame[y:y+h, x:x+w]
+                        #print(type(tmp_face_crop))
+                        if (self.isMaskOn(self.MASK_TYPE.RPPG)):
+                            rppgAlg.s2r(tmp_face_crop)
+                    self.dataLock.lock()
+                    frame = tmp_frame
+                    face_crop = tmp_face_crop
+                    self.dataLock.unlock()
+                    self.frameCapturedSgn.emit(frame)
+                    if face_find:
+                        self.faceCapturedSgn.emit(face_crop)
 
         cap.release()
         cv2.destroyAllWindows()
