@@ -4,7 +4,7 @@ from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
 from enum import IntEnum
 import cv2
-import config
+
 from numpy import ndarray
 from utilities import *
 from rppg import *
