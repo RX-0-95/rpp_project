@@ -1,3 +1,4 @@
+from sys import getdefaultencoding
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
@@ -5,7 +6,7 @@ from enum import IntEnum
 import cv2
 import config
 from numpy import ndarray
-from config import OPENCV_DATA_PATH
+from utilities import *
 from rppg import *
 from timer import *
 
@@ -112,12 +113,14 @@ class CaptureThread(qtc.QThread):
         frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         # face detector
         self.classifier = cv2.CascadeClassifier(
-            str(config.OPENCV_DATA_PATH + config.HASS_FRONTAL_FACE)
+            #str(config.OPENCV_DATA_PATH + config.HASS_FRONTAL_FACE)
+            getCascaderModelPath() 
         )
         # face mark detector
         self.markDetector = cv2.face.createFacemarkLBF()
         self.markDetector.loadModel(
-            str(config.OPENCV_DATA_PATH + config.FACE_MARK_MODEL)
+            #str(config.OPENCV_DATA_PATH + config.FACE_MARK_MODEL)
+            getFaceMarkModelPath()
         )
 
         # mark_detector = cv2.face_Facemark.loadModel(
@@ -196,7 +199,7 @@ class CaptureThread(qtc.QThread):
         None
 
     def __detectFaces(self, frame):
-        faces = np.empty(4)
+        faces_list = []
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = self.classifier.detectMultiScale(
             gray_frame,
@@ -206,23 +209,17 @@ class CaptureThread(qtc.QThread):
             flags=cv2.CASCADE_SCALE_IMAGE,
         )
         print(type(faces))
-        faces_list = list(
-            self.classifier.detectMultiScale(
-                gray_frame,
-                scaleFactor=1.3,
-                minNeighbors=4,
-                minSize=(50, 50),
-                flags=cv2.CASCADE_SCALE_IMAGE,
-            )
-        )
+        faces_list = list(faces)
         if self.maskFlag > 0:
             if (len(faces_list)) > 0:
                 # sort the potential face rects by there area
                 faces_list.sort(key=lambda x: x[2] * x[3])
                 self.faceRect = faces_list[-1]
+                if self.isMaskOn(self.MASK_TYPE.RECTANGLE):
+                    self._drawRect(self.faceRect)
 
-        if self.isMaskOn(self.MASK_TYPE.RECTANGLE):
-            self._drawRect(self.faceRect)
+        #if self.isMaskOn(self.MASK_TYPE.RECTANGLE) and len(faces_list)>0:
+        #    self._drawRect(self.faceRect)
 
         if self.isMaskOn(self.MASK_TYPE.LANDMAKS):
             if len(faces_list):
