@@ -1,3 +1,4 @@
+from os import terminal_size
 from PyQt5 import QtWidgets as qtw 
 from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
@@ -36,8 +37,20 @@ class rppg():
             self.bpms = []
             self.bpm = 0
             self.idx = 1
+            self.frame_step = 0 
+            self.videoMode = False 
+            self.cameraMode = True
 
-    
+    def setVideoMode(self, frame_step):
+        self.cameraMode = False
+        self.videoMode = True
+        self.frame_step = frame_step 
+
+    def setCameraMode(self):
+        self.cameraMode = True
+        self.videoMode = False
+        self.frame_step = 0 
+     
     @pyqtSlot(ndarray)
     def preImage(self, ndarray):
         None
@@ -55,7 +68,15 @@ class rppg():
         None
 
     def ica(self,imagedata):
-        self.times.append(self.timer.timeSinceStart())
+        if self.cameraMode: 
+            self.times.append(self.timer.timeSinceStart())
+        else:
+            if len(self.times) == 0:
+                self.times.append(self.frame_step)
+
+            else:
+                self.times.append(self.times[-1]+self.frame_step)
+                print("time step " + (str(self.frame_step)) )
         c_means = self.getMean(imagedata)
         self.frame_buffers.append(c_means)
         

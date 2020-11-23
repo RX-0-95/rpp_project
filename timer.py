@@ -25,6 +25,7 @@ class timer():
             self.last_time_in_time_elapsed = 0 
             self.current_time = 0 
             self.started = False 
+            self.time_at_reset = 0 
 
     def start(self):
         self.started = True 
@@ -33,12 +34,21 @@ class timer():
         self.last_time_in_time_elapsed = self.last_time 
         self.start_time  = self.last_time 
         self.current_time = self.last_time 
+        self.time_at_reset = self.start_time
 
     def timeElapsed(self):
         self.current_time = time.time()
         self.time_elapsed = self.current_time - self.last_time_in_time_elapsed 
         self.last_time_in_time_elapsed = self.current_time 
         return self.time_elapsed
+
+    def timeCounter(self):
+        return time.time() - self.time_at_reset
+        
+    def timeCounterReset(self):
+        self.time_at_reset = time.time() 
     
     def timeSinceStart(self):
         return time.time() - self.start_time
+    
+    

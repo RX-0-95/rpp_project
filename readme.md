@@ -15,7 +15,7 @@ run the run.py
 
 
 ## To Do 
-- [ ] forehead detection 
+- [x] forehead detection 
 - [ ] whole face crop 
 - [ ] App open camera button to main interface 
 - [ ] add open video file button to main interface 
@@ -25,4 +25,4 @@ run the run.py
 - [ ] face move detection 
 - [ ] re-detect face and forehead after face move  
 - [ ] ssr alogorthm 
-  
+- [ ] video mode 

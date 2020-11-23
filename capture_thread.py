@@ -1,3 +1,4 @@
+from operator import truediv
 from sys import getdefaultencoding
 from PyQt5 import QtWidgets as qtw
 from PyQt5 import QtCore as qtc
@@ -6,6 +7,7 @@ from enum import IntEnum
 import cv2
 
 from numpy import ndarray
+from numpy.core.fromnumeric import sort
 from utilities import *
 from rppg import *
 from timer import *
@@ -39,6 +41,7 @@ class CaptureThread(qtc.QThread):
         self.maskFlag = 0
         self.cameraMode = 1
         self.videoMode = 0
+        self.videoStep = 0.0
         self.playVideo = True
         self.classifier = None
         self.markDetector = None
@@ -101,9 +104,13 @@ class CaptureThread(qtc.QThread):
     def run(self):
         cap = None
         self.running = True
+        self.rppgAlg = rppg.rppgInstance()
         if self.videoMode:
             cap = cv2.VideoCapture(self.videoPath)
-
+            self.videoStep =float( 1.0/cap.get(cv2.CAP_PROP_FPS))
+            self.rppgAlg.setVideoMode(self.videoStep)
+            print(self.videoStep)
+            
         elif self.cameraMode:
             cap = cv2.VideoCapture(self.cameraID, cv2.CAP_DSHOW)
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
@@ -113,13 +120,13 @@ class CaptureThread(qtc.QThread):
         frame_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         # face detector
         self.classifier = cv2.CascadeClassifier(
-            #str(config.OPENCV_DATA_PATH + config.HASS_FRONTAL_FACE)
-            getCascaderModelPath() 
+            # str(config.OPENCV_DATA_PATH + config.HASS_FRONTAL_FACE)
+            getCascaderModelPath()
         )
         # face mark detector
         self.markDetector = cv2.face.createFacemarkLBF()
         self.markDetector.loadModel(
-            #str(config.OPENCV_DATA_PATH + config.FACE_MARK_MODEL)
+            # str(config.OPENCV_DATA_PATH + config.FACE_MARK_MODEL)
             getFaceMarkModelPath()
         )
 
@@ -127,17 +134,19 @@ class CaptureThread(qtc.QThread):
         #    config.OPENCV_DATA_PATH + config.FACE_MARK_MODEL
         # )
 
-        rppgAlg = rppg.rppgInstance()
+        
         self.timer = timer.timerInstance()
         self.timer.start()
         # markDetector = cv2.face.createFacemarkLBF();
-        forehead_rect = [390, 250, 50, 25]
+        
 
-        self.rppgAlg = rppg.rppgInstance()
-
+        
         while self.running:
-            if self.playVideo:
+            
+            if self.playVideo and self.timer.timeCounter()> self.videoStep:
+                
                 ret, self.frame = cap.read()
+                
                 tmp_face_crop = None
                 face_find = False
 
@@ -168,17 +177,24 @@ class CaptureThread(qtc.QThread):
                 if ret:
 
                     ##TODO:detect face and find the rect with the landmakr##
-                    if self.maskFlag > 0:
+                    if self.maskFlag > 0 and not self.findFace:
                         self.__detectFaces(self.frame)
-
+                       
+                    if len(self.foreheadRect)> 0:
+                        self._drawRect(self.foreheadRect)
+                        self.foreheadFrame = self._getSubframeRect(self.foreheadRect)
+                        self.rppgAlg.ica(self.foreheadFrame)
                     self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-                    self._drawRect(forehead_rect)
-                    self.foreheadFrame = self._getSubframeRect(forehead_rect)
+                    # self._drawRect(self.foreheadRect)
+                    # self.foreheadFrame = self._getSubframeRect(self.foreheadRect)
                     self.frameCapturedSgn.emit(self.frame)
-                    # self.foreheadFrameSgn.emit(self.foreheadFrame)
-                    self.rppgAlg.ica(self.foreheadFrame)
-                    self.fps = 1.0 / self.timer.timeElapsed()
-                    print("fps: " + str(self.fps))
+                    #self.foreheadFrameSgn.emit(self.foreheadFrame)
+                    # self.rppgAlg.ica(self.foreheadFrame)
+                    
+                    #self.fps = 1.0 / self.timer.timeElapsed()
+                    #print("fps: " + str(self.fps))
+
+                self.timer.timeCounterReset()
 
         cap.release()
         cv2.destroyAllWindows()
@@ -208,43 +224,48 @@ class CaptureThread(qtc.QThread):
             minSize=(50, 50),
             flags=cv2.CASCADE_SCALE_IMAGE,
         )
-        print(type(faces))
+        # print(type(faces))
         faces_list = list(faces)
+        face_index = 0
         if self.maskFlag > 0:
             if (len(faces_list)) > 0:
                 # sort the potential face rects by there area
-                faces_list.sort(key=lambda x: x[2] * x[3])
-                self.faceRect = faces_list[-1]
+                self.findFace = True
+                sorted_face_list = sorted(
+                    enumerate(faces_list), key=lambda x: x[1][2] * x[1][3]
+                )
+
+                face_index, _ = sorted_face_list[-1]
+
+                self.faceRect = faces_list[face_index]
+
                 if self.isMaskOn(self.MASK_TYPE.RECTANGLE):
                     self._drawRect(self.faceRect)
 
-        #if self.isMaskOn(self.MASK_TYPE.RECTANGLE) and len(faces_list)>0:
-        #    self._drawRect(self.faceRect)
-
         if self.isMaskOn(self.MASK_TYPE.LANDMAKS):
             if len(faces_list):
-                # faces = cv2.Rect(faces_list[-1])
                 ret, land_mark = self.markDetector.fit(self.frame, faces)
-                print(np.shape(land_mark))
-                mark = land_mark[0][0]
-                print(np.shape(mark))
+                mark = land_mark[face_index][0]
+                self.foreheadRect = self._getForeheadRect(mark)
+                #self._drawRect(self.foreheadRect)
+                #self.foreheadFrame = self._getSubframeRect(self.foreheadRect)
+                #self.rppgAlg.ica(self.foreheadFrame)
+                # print(np.shape(mark))
                 for i in range(0, len(mark)):
-                    print(mark[i])
-                    cv2.circle(self.frame, tuple(mark[i]),2,(225, 0, 0),cv2.FILLED)
-                   
-        """
-        if len(faces):
-            isFaceFind = True
-        if self.isMaskOn(self.MASK_TYPE.RECTANGLE):
-            for face in faces:
-                cv2.rectangle(frame, face, (0, 0, 255), 1)
-                isFaceFind = True
-        return isFaceFind, faces
-        """
+                    # print(mark[i])
+                    cv2.circle(self.frame, tuple(mark[i]), 2, (225, 0, 0), cv2.FILLED)
 
     def _drawRect(self, rect, color=(225, 0, 0)):
         x, y, w, h = rect
         cv2.rectangle(self.frame, (x, y), (x + w, y + h), color, 1)
+
+    # From the face mark calculate the rect of the forehead
+    def _getForeheadRect(self, face_mark):
+        _heigh = int(face_mark[30][1] - face_mark[28][1])
+        _width = int(face_mark[23][0] - face_mark[20][0])
+        _x = int(face_mark[20][0])
+        _y = int(face_mark[20][1] - _heigh)
+        return [_x, _y, _width, _heigh]
 
     def _getSubframeRect(self, rect):
         x, y, w, h = rect
