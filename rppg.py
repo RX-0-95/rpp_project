@@ -76,7 +76,7 @@ class rppg():
 
             else:
                 self.times.append(self.times[-1]+self.frame_step)
-                print("time step " + (str(self.frame_step)) )
+                #print("time step " + (str(self.frame_step)) )
         c_means = self.getMean(imagedata)
         self.frame_buffers.append(c_means)
         
@@ -119,6 +119,10 @@ class rppg():
 
             self.bpm = self.freqs[idx2]
             self.idx += 1
+
+            gap = (self.max_buffer_size - buffer_len)/fps
+            
+
         
         
         

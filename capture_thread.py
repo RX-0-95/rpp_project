@@ -261,10 +261,10 @@ class CaptureThread(qtc.QThread):
 
     # From the face mark calculate the rect of the forehead
     def _getForeheadRect(self, face_mark):
-        _heigh = int(face_mark[30][1] - face_mark[28][1])
+        _heigh = int(face_mark[31][1] - face_mark[29][1])
         _width = int(face_mark[23][0] - face_mark[20][0])
         _x = int(face_mark[20][0])
-        _y = int(face_mark[20][1] - _heigh)
+        _y = int(face_mark[20][1] - _heigh*1.2)
         return [_x, _y, _width, _heigh]
 
     def _getSubframeRect(self, rect):
