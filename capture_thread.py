@@ -112,6 +112,7 @@ class CaptureThread(qtc.QThread):
             print(self.videoStep)
             
         elif self.cameraMode:
+            
             cap = cv2.VideoCapture(self.cameraID, cv2.CAP_DSHOW)
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
