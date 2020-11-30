@@ -5,11 +5,11 @@
 import os 
 import sys 
 
-OPENCV_DATA_PATH = "\data"
+OPENCV_DATA_PATH = "/data"
 #HASS_FRONTAL_FACE = "\haarcascade_frontalface_default.xml"
-HASS_FRONTAL_FACE = "\haarcascade_frontalface_alt2.xml"
+HASS_FRONTAL_FACE = "/haarcascade_frontalface_alt2.xml"
 
-FACE_MARK_MODEL = "\lbfmodel.yaml"
+FACE_MARK_MODEL = "/lbfmodel.yaml"
 
 def getCascaderModelPath():
     _path = str(getAppPath()  + str(OPENCV_DATA_PATH)+ str(HASS_FRONTAL_FACE))
