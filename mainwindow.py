@@ -8,6 +8,8 @@ from PyQt5.QtCore import pyqtSlot
 import cv2
 from capture_thread import CaptureThread as ct
 from numpy import ndarray
+import matplotlib.pyplot as plt
+
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
         super().__init__() 
@@ -16,6 +18,13 @@ class MainWindow(qtw.QMainWindow):
         self.initUI()
         # self.setStyleSheet("background-color: 'black")
         self.lock = qtc.QMutex()
+        ###matlabplot###############################
+        self.fig, self.ax = plt.subplots()
+
+        (self.ln,) = self.ax.plot([], [], "ro-")
+        #################################################
+
+
         self.show()
 
     def initUI(self):

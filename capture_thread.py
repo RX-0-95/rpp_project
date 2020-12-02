@@ -5,12 +5,18 @@ from PyQt5 import QtCore as qtc
 from PyQt5 import QtGui as qtg
 from enum import IntEnum
 import cv2
-
+import csv
 from numpy import ndarray
 from numpy.core.fromnumeric import sort
 from utilities import *
 from rppg import *
 from timer import *
+import matplotlib.pyplot as plt
+
+FOREHEAD = False
+FACEAREA = True
+FACEAREAMARK = []
+MOTIONWASTEFRAME = 20
 
 
 class CaptureThread(qtc.QThread):
@@ -50,14 +56,15 @@ class CaptureThread(qtc.QThread):
         self.faceRect = []
         self.ROIRect = []
         self.frame = []
+        self.frame_mean = 0.0
+        self.sentFrame = []
         self.fps = 0.0
         self.timer = None
         self.findFace = False
         self.faceMoved = False
-
+        self.fpbg = None
+        self.faceRppgAreaRects = []
         self.rppgAlg = None
-
-        self.__loadOrnames()
 
     @classmethod
     def fromVideoPath(cls, videoPath, lock):
@@ -107,12 +114,10 @@ class CaptureThread(qtc.QThread):
         self.rppgAlg = rppg.rppgInstance()
         if self.videoMode:
             cap = cv2.VideoCapture(self.videoPath)
-            self.videoStep =float( 1.0/cap.get(cv2.CAP_PROP_FPS))
+            self.videoStep = float(1.0 / cap.get(cv2.CAP_PROP_FPS))
             self.rppgAlg.setVideoMode(self.videoStep)
-            print(self.videoStep)
-            
+
         elif self.cameraMode:
-            
             cap = cv2.VideoCapture(self.cameraID, cv2.CAP_DSHOW)
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, 800)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
@@ -134,20 +139,20 @@ class CaptureThread(qtc.QThread):
         # mark_detector = cv2.face_Facemark.loadModel(
         #    config.OPENCV_DATA_PATH + config.FACE_MARK_MODEL
         # )
+        self.fpbg = cv2.createBackgroundSubtractorMOG2(500, 15, True)
 
-        
         self.timer = timer.timerInstance()
         self.timer.start()
         # markDetector = cv2.face.createFacemarkLBF();
-        
-
-        
+        motionWasteFrame = 0
         while self.running:
-            
-            if self.playVideo and self.timer.timeCounter()> self.videoStep:
-                
+
+            if self.playVideo and self.timer.timeCounter() > self.videoStep:
+
                 ret, self.frame = cap.read()
-                
+                # self.frame = cv2.resize(
+                #    self.frame, (1280, 720), fx=0, fy=0, interpolation=cv2.INTER_CUBIC
+                # )
                 tmp_face_crop = None
                 face_find = False
 
@@ -179,23 +184,54 @@ class CaptureThread(qtc.QThread):
 
                     ##TODO:detect face and find the rect with the landmakr##
                     if self.maskFlag > 0 and not self.findFace:
+                        # if self.maskFlag > 0  and self.timer.timeCounter() > 1.0:
+                        # if self.maskFlag > 0:
                         self.__detectFaces(self.frame)
-                       
-                    if len(self.foreheadRect)> 0:
-                        self._drawRect(self.foreheadRect)
-                        self.foreheadFrame = self._getSubframeRect(self.foreheadRect)
-                        self.rppgAlg.ica(self.foreheadFrame)
+
+                    if len(self.foreheadRect) > 0:
+                        # self._drawRect(self.foreheadRect)
+                        self._drawRect(self.faceRppgAreaRects)
+                        # self.foreheadFrame = self._getSubframeRect(self.foreheadRect)
+
+                        if self._motionDetect():
+                            print("Motion detected ")
+                            motionWasteFrame = MOTIONWASTEFRAME
+                            self.findFace = False
+                        elif motionWasteFrame == 0:
+                            self.frame_mean = self._getFrameRectsMean(
+                                self.faceRppgAreaRects
+                            )
+                            self.rppgAlg.ica(self.frame_mean)
+                            """
+                            self.ln.set_xdata(self.rppgAlg.plt_idx)
+                            self.ln.set_ydata(self.rppgAlg.fft)
+                            self.ax.relim()
+                            self.ax.autoscale_view()
+                            self.fig.canvas.draw()
+                            self.fig.canvas.flush_events()
+                            """
+                        else:
+                            motionWasteFrame -= 1
+                            print("waste frame")
                     self.frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
                     # self._drawRect(self.foreheadRect)
                     # self.foreheadFrame = self._getSubframeRect(self.foreheadRect)
-                    self.frameCapturedSgn.emit(self.frame)
-                    #self.foreheadFrameSgn.emit(self.foreheadFrame)
+                    self.dataLock.lock()
+                    self.sentFrame = self.frame
+                    self.dataLock.unlock()
+                    self.frameCapturedSgn.emit(self.sentFrame)
+                    # self.foreheadFrameSgn.emit(self.foreheadFrame)
                     # self.rppgAlg.ica(self.foreheadFrame)
-                    
-                    #self.fps = 1.0 / self.timer.timeElapsed()
-                    #print("fps: " + str(self.fps))
 
+                    # self.fps = 1.0 / self.timer.timeElapsed()
+                    # print("fps: " + str(self.fps))
+                else:
+                    self.running = False
                 self.timer.timeCounterReset()
+
+        with open("output.csv", "w") as csvfile:
+            wr = csv.writer(csvfile, dialect="excel")
+            wr.writerow(self.rppgAlg.bmpdatas)
 
         cap.release()
         cv2.destroyAllWindows()
@@ -239,7 +275,7 @@ class CaptureThread(qtc.QThread):
                 face_index, _ = sorted_face_list[-1]
 
                 self.faceRect = faces_list[face_index]
-
+                self.ROIRect = self._doubleRectAroundCenter(self.faceRect)
                 if self.isMaskOn(self.MASK_TYPE.RECTANGLE):
                     self._drawRect(self.faceRect)
 
@@ -248,29 +284,114 @@ class CaptureThread(qtc.QThread):
                 ret, land_mark = self.markDetector.fit(self.frame, faces)
                 mark = land_mark[face_index][0]
                 self.foreheadRect = self._getForeheadRect(mark)
-                #self._drawRect(self.foreheadRect)
-                #self.foreheadFrame = self._getSubframeRect(self.foreheadRect)
-                #self.rppgAlg.ica(self.foreheadFrame)
+                self.faceRppgAreaRects = self._getFaceAreaRects(mark)
+
+                # self.foreheadRect = self._getForeheadRect(mark)
+                # self._drawRect(self.foreheadRect)
+                # self.foreheadFrame = self._getSubframeRect(self.foreheadRect)
+                # self.rppgAlg.ica(self.foreheadFrame)
                 # print(np.shape(mark))
                 for i in range(0, len(mark)):
                     # print(mark[i])
                     cv2.circle(self.frame, tuple(mark[i]), 2, (225, 0, 0), cv2.FILLED)
 
-    def _drawRect(self, rect, color=(225, 0, 0)):
-        x, y, w, h = rect
-        cv2.rectangle(self.frame, (x, y), (x + w, y + h), color, 1)
+    def _getFrameRectsMean(self, rects):
+        mean = 0.0
+        print("rects" + str(len(rects)))
+        print(rects)
+        for rect in rects:
+            imagedata = self._getSubframeRect(rect)
+            c1 = np.mean(imagedata[:, :, 0])
+            c2 = np.mean(imagedata[:, :, 1])
+            c3 = np.mean(imagedata[:, :, 2])
+            mean += (c1 + c2 + c3) / 3.0
+        print("mean" + str(mean))
+        mean = mean / (len(rects))
+        print("mean" + str(mean))
+        return mean
+
+    def _drawRect(self, rects, color=(225, 0, 0)):
+        for rect in rects:
+            x, y, w, h = rect
+            cv2.rectangle(self.frame, (x, y), (x + w, y + h), color, 1)
 
     # From the face mark calculate the rect of the forehead
     def _getForeheadRect(self, face_mark):
-        _heigh = int(face_mark[30][1] - face_mark[28][1])
-        _width = int(face_mark[23][0] - face_mark[20][0])
-        _x = int(face_mark[20][0])
-        _y = int(face_mark[20][1] - _heigh)
-        return [_x, _y, _width, _heigh]
+        # x, y, w, h = self.faceRect
+        # _x = int(face_mark[20][0])
+        # _y = int(y)
+        # _height = int((face_mark[20][1] - _y) * 0.9)
+        # _width = int(face_mark[23][0] - face_mark[20][0])
+
+        x, y, w, h = self.faceRect
+        _x = int(face_mark[23][0])
+        _y = int(y)
+        _height = int((face_mark[24][1] - _y) * 0.9)
+        _width = int(face_mark[26][0] - face_mark[23][0])
+
+        return [_x, _y, _width, _height]
+
+    def _getFaceAreaRects(self, face_mark):
+        # x1 = int(face_mark[18][0])
+        # y1 = int(face_mark[3][1])
+        # height1 = int(face_mark[4][1] - face_mark[3][1])
+        # width1 = int(face_mark[19][0] - face_mark[18][0])
+        # rect1 = [x1, y1, height1, width1]
+        x1 = int(face_mark[5][0])
+        y1 = int(face_mark[2][1])
+        width1 = int(face_mark[6][0] - face_mark[5][0])
+        height1 = int(face_mark[3][1] - face_mark[2][1])
+
+        rect1 = [x1, y1, width1, height1]
+
+        x2 = int(face_mark[11][0])
+        y2 = int(face_mark[15][1])
+        width2 = int(face_mark[11][0] - face_mark[10][0])
+        height2 = int(face_mark[13][1] - face_mark[14][1])
+        x2 = x2 - width2
+        rect2 = [x2, y2, width2, height2]
+
+        return (rect1, rect2)
+        # return (self.faceRect)
 
     def _getSubframeRect(self, rect):
         x, y, w, h = rect
         return self.frame[y : y + h, x : x + w, :]
 
-    def __loadOrnames(self):
-        None
+    def _doubleRectAroundCenter(self, rect):
+        x, y, w, h = rect
+        a = x - w / 2
+        if a > 0:
+            _x = a
+        else:
+            _x = 0
+        b = y - h / 2
+        if b > 0:
+            _y = b
+        else:
+            _y = 0
+
+        _rect = [int(_x), int(_y), int(2 * w), int(2 * h)]
+        return _rect
+
+    def _motionDetect(self):
+
+        frame = cv2.UMat(self._getSubframeRect(self.ROIRect))
+
+        fgmask = self.fpbg.apply(frame)
+
+        if not fgmask:
+            return
+        _, fgmask = cv2.threshold(fgmask, 25, 225, cv2.THRESH_BINARY)
+        noise_size = 15
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (noise_size, noise_size))
+        fgmask = cv2.erode(fgmask, kernel=kernel)
+
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (noise_size, noise_size))
+        fgmask = cv2.dilate(fgmask, kernel=kernel)
+
+        countours, _ = cv2.findContours(fgmask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        has_motion = bool(len(countours))
+
+        return has_motion
