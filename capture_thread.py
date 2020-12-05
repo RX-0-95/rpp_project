@@ -7,6 +7,7 @@ from enum import IntEnum
 import cv2
 import csv
 from numpy import ndarray
+from numpy import fft
 from numpy.core.fromnumeric import sort
 from utilities import *
 from rppg import *
@@ -16,7 +17,8 @@ import matplotlib.pyplot as plt
 FOREHEAD = False
 FACEAREA = True
 FACEAREAMARK = []
-MOTIONWASTEFRAME = 20
+MOTIONWASTEFRAME = 1
+FASTMODE = 0
 
 
 class CaptureThread(qtc.QThread):
@@ -35,7 +37,7 @@ class CaptureThread(qtc.QThread):
         RPPG = (2,)
         MASKCOUNT = 3
 
-    def __init__(self, cameraID, lock):
+    def __init__(self, cameraID, lock, fftwindow=None):
         super().__init__()
         self.running = False
         self.cameraID = cameraID
@@ -65,10 +67,11 @@ class CaptureThread(qtc.QThread):
         self.fpbg = None
         self.faceRppgAreaRects = []
         self.rppgAlg = None
+        self.fftwindow = fftwindow
 
     @classmethod
-    def fromVideoPath(cls, videoPath, lock):
-        obj = cls(-1, lock)
+    def fromVideoPath(cls, videoPath, lock, fftwindow=None):
+        obj = cls(-1, lock, fftwindow=fftwindow)
         obj.setVideoPath(videoPath)
         obj.setPlayVideo(False)
         return obj
@@ -147,7 +150,9 @@ class CaptureThread(qtc.QThread):
         motionWasteFrame = 0
         while self.running:
 
-            if self.playVideo and self.timer.timeCounter() > self.videoStep:
+            if self.playVideo and ( 
+                self.timer.timeCounter() > self.videoStep or FASTMODE
+            ):
 
                 ret, self.frame = cap.read()
                 # self.frame = cv2.resize(
@@ -202,6 +207,9 @@ class CaptureThread(qtc.QThread):
                                 self.faceRppgAreaRects
                             )
                             self.rppgAlg.ica(self.frame_mean)
+                            self.fftwindow.update_plot(
+                                self.rppgAlg.freqs, self.rppgAlg.fft
+                            )
                             """
                             self.ln.set_xdata(self.rppgAlg.plt_idx)
                             self.ln.set_ydata(self.rppgAlg.fft)
@@ -234,7 +242,7 @@ class CaptureThread(qtc.QThread):
             wr.writerow(self.rppgAlg.bmpdatas)
 
         cap.release()
-        cv2.destroyAllWindows()
+        #cv2.destroyAllWindows()
         self.running = False
         print("end run ")
 
@@ -345,7 +353,7 @@ class CaptureThread(qtc.QThread):
         rect1 = [x1, y1, width1, height1]
 
         x2 = int(face_mark[11][0])
-        y2 = int(face_mark[15][1])
+        y2 = int(face_mark[14][1])
         width2 = int(face_mark[11][0] - face_mark[10][0])
         height2 = int(face_mark[13][1] - face_mark[14][1])
         x2 = x2 - width2

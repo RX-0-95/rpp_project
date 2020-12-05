@@ -9,7 +9,8 @@ import cv2
 from capture_thread import CaptureThread as ct
 from numpy import ndarray
 import matplotlib.pyplot as plt
-
+import fftWindow
+from fftWindow import FftWindow
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
         super().__init__() 
@@ -22,8 +23,10 @@ class MainWindow(qtw.QMainWindow):
         self.fig, self.ax = plt.subplots()
 
         (self.ln,) = self.ax.plot([], [], "ro-")
+        self.fftwindow = FftWindow() 
+        self.fftwindow.show()
         #################################################
-
+        
 
         self.show()
 
@@ -122,7 +125,7 @@ class MainWindow(qtw.QMainWindow):
         
         if self.capturer != None:
             self.capturer.setRunning(False)
-        self.capturer = ct.fromVideoPath(fileName,self.lock)
+        self.capturer = ct.fromVideoPath(fileName,self.lock,fftwindow = self.fftwindow)
         self.capturer.frameCapturedSgn.connect(self.__updateFrame)
         self.startVideoPlayBtn.setChecked(False)
         self.startVideoPlayBtn.toggled.connect(self.capturer.tooglePlayVideo)
@@ -153,7 +156,7 @@ class MainWindow(qtw.QMainWindow):
             self.capturer.setRunning(False)
         
         cameraID = 0
-        self.capturer = ct(cameraID,self.lock)
+        self.capturer = ct(cameraID,self.lock,self.fftwindow)
         
         self.capturer.frameCapturedSgn.connect(self.__updateFrame)
         #self.capturer.faceCapturedSgn.connect(self.__updateFrame)

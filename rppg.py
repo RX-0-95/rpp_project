@@ -10,12 +10,13 @@ from timer import *
 import cv2
 import matplotlib.pyplot as plt
 from sklearn.decomposition import FastICA
+
 # Class rppg is a singleton
 # part of the code from ##TODO: citation
 
 MIN_BMP = 40
 MAX_BMP = 200
-MAX_BUFFER_SIZE = 500
+MAX_BUFFER_SIZE = 900
 
 
 class rppg:
@@ -114,7 +115,6 @@ class rppg:
             interpolated = np.hamming(buffer_len) * interpolated
             interpolated = interpolated - np.mean(interpolated)
 
-           
             raw = np.fft.rfft(interpolated)
             phase = np.angle(raw)
             self.fft = np.abs(raw)
@@ -141,20 +141,25 @@ class rppg:
             pfreq = freqs[idx]
             self.freqs = pfreq
             self.fft = pruned
+            """
             print("++++++++++++idx+++++++++++")
             print(self.idx)
             print("-----------pruned----------")
             print(pruned)
             print("++++++++++++freqs++++++++++++")
             print(self.freqs)
-
-            if len(pruned) >= 6:
+            """
+            if len(pruned) >= 10:
                 pruned[0] = 0
                 pruned[1] = 0
                 pruned[2] = 0
                 pruned[3] = 0
                 pruned[4] = 0
                 pruned[5] = 0
+                pruned[6] = 0
+                pruned[7] = 0
+                pruned[8] = 0
+                pruned[9] = 0
 
             idx2 = np.argmax(pruned)
             t = (np.sin(phase[idx2]) + 1.0) / 2.0
