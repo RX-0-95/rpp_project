@@ -208,7 +208,7 @@ class CaptureThread(qtc.QThread):
                             )
                             self.rppgAlg.ica(self.frame_mean)
                             self.fftwindow.update_plot(
-                                self.rppgAlg.freqs, self.rppgAlg.fft
+                                self.rppgAlg.freqs, self.rppgAlg.fft,self.rppgAlg.bpm,self.rppgAlg.gap
                             )
                             """
                             self.ln.set_xdata(self.rppgAlg.plt_idx)
@@ -313,6 +313,7 @@ class CaptureThread(qtc.QThread):
             c2 = np.mean(imagedata[:, :, 1])
             c3 = np.mean(imagedata[:, :, 2])
             mean += (c1 + c2 + c3) / 3.0
+            mean += (c2) / 1.0
         print("mean" + str(mean))
         mean = mean / (len(rects))
         print("mean" + str(mean))

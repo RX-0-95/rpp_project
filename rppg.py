@@ -43,6 +43,7 @@ class rppg:
             self.fft = []
             self.bpms = []
             self.bpm = 0
+            self.gap = 0 
             self.idx = 1
             self.frame_step = 0
             self.videoMode = False
@@ -149,17 +150,10 @@ class rppg:
             print("++++++++++++freqs++++++++++++")
             print(self.freqs)
             """
-            if len(pruned) >= 10:
-                pruned[0] = 0
-                pruned[1] = 0
-                pruned[2] = 0
-                pruned[3] = 0
-                pruned[4] = 0
-                pruned[5] = 0
-                pruned[6] = 0
-                pruned[7] = 0
-                pruned[8] = 0
-                pruned[9] = 0
+            if len(pruned) >= 15:
+                for i in range(0,15):
+                    pruned[i]  = 0
+            
 
             idx2 = np.argmax(pruned)
             t = (np.sin(phase[idx2]) + 1.0) / 2.0
@@ -169,10 +163,10 @@ class rppg:
 
             self.bpm = self.freqs[idx2]
             self.idx += 1
-            gap = (self.max_buffer_size - buffer_len) / fps
+            self.gap = (self.max_buffer_size - buffer_len) / fps
 
-            if gap:
-                text = "(estimate: %0.1f bpm, wait %0.0f s)" % (self.bpm, gap)
+            if self.gap:
+                text = "(estimate: %0.1f bpm, wait %0.0f s)" % (self.bpm, self.gap)
                 print(text)
             else:
                 text = "(estimate: %0.1f bpm)" % (self.bpm)
