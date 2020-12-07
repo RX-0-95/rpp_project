@@ -174,7 +174,7 @@ class rppg:
 
             self.bmpdatas.append(self.bpm)
 
-        print("ica")
+     
 
     def getMean(self, imagedata):
         # print("Image Data size")

@@ -26,7 +26,7 @@ class FftWindow(qtw.QMainWindow):
         self.hearRateLable = qtw.QLabel("Hear Rate")
         self.fftwindowLayout = qtw.QVBoxLayout()
         self.canvas = MplCanvas(self, width=10, height=4, dpi=100)
-        self.canvas.axes.plot([0, 1, 2, 3, 4], [10, 1, 20, 3, 40])
+        #self.canvas.axes.plot([0, 1, 2, 3, 4], [10, 1, 20, 3, 40])
         self.fftwindowLayout.addWidget(self.hearRateLable)
         self.fftwindowLayout.addWidget(self.canvas)
         widget = qtw.QWidget(self)

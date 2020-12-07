@@ -36,7 +36,7 @@ class MainWindow(qtw.QMainWindow):
 
         #Menubar 
         self.mainMenu = self.menuBar()
-        self.fileMenu = self.mainMenu.addMenu("&File");
+        self.fileMenu = self.mainMenu.addMenu("&Tool");
         
         #Image and Image Scene 
         self.imagScene = qtw.QGraphicsScene(self)

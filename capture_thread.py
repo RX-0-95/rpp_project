@@ -9,16 +9,24 @@ import csv
 from numpy import ndarray
 from numpy import fft
 from numpy.core.fromnumeric import sort
+from numpy.lib.type_check import imag
 from utilities import *
 from rppg import *
 from timer import *
 import matplotlib.pyplot as plt
 
+FOREHEAD = True
+FACEAREA =False
 FOREHEAD = False
-FACEAREA = True
+FACEAREA =True
 FACEAREAMARK = []
 MOTIONWASTEFRAME = 1
 FASTMODE = 0
+GREEN_CHANNEL_ONLY = True 
+
+
+
+
 
 
 class CaptureThread(qtc.QThread):
@@ -246,7 +254,12 @@ class CaptureThread(qtc.QThread):
         self.running = False
         print("end run ")
 
+    def _removeArtifact(self, img):
+        dst = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21) 
+        return dst 
+
     ###TODO: replace with landmark detection####################
+
     def get_subface_coord(self, fh_x, fh_y, fh_w, fh_h):
         x, y, w, h = self.face_rect
         return [
@@ -293,6 +306,12 @@ class CaptureThread(qtc.QThread):
                 mark = land_mark[face_index][0]
                 self.foreheadRect = self._getForeheadRect(mark)
                 self.faceRppgAreaRects = self._getFaceAreaRects(mark)
+            
+                if FOREHEAD == True:
+                    self.faceRppgAreaRects = self._getForeheadRect(mark) 
+                elif FACEAREA == True:
+                    self.faceRppgAreaRects = self._getFaceAreaRects(mark)
+                
 
                 # self.foreheadRect = self._getForeheadRect(mark)
                 # self._drawRect(self.foreheadRect)
@@ -309,14 +328,13 @@ class CaptureThread(qtc.QThread):
         print(rects)
         for rect in rects:
             imagedata = self._getSubframeRect(rect)
+            imagedata = self._removeArtifact(imagedata)
             c1 = np.mean(imagedata[:, :, 0])
             c2 = np.mean(imagedata[:, :, 1])
             c3 = np.mean(imagedata[:, :, 2])
             mean += (c1 + c2 + c3) / 3.0
             mean += (c2) / 1.0
-        print("mean" + str(mean))
         mean = mean / (len(rects))
-        print("mean" + str(mean))
         return mean
 
     def _drawRect(self, rects, color=(225, 0, 0)):
@@ -338,7 +356,7 @@ class CaptureThread(qtc.QThread):
         _height = int((face_mark[24][1] - _y) * 0.9)
         _width = int(face_mark[26][0] - face_mark[23][0])
 
-        return [_x, _y, _width, _height]
+        return [[_x, _y, _width, _height]]
 
     def _getFaceAreaRects(self, face_mark):
         # x1 = int(face_mark[18][0])
