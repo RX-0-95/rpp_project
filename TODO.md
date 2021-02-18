@@ -1,11 +1,12 @@
-- [ ] forehead detection 
-- [ ] whole face crop 
+- [x] forehead detection 
+- [x] whole face crop 
 - [ ] App open camera button to main interface 
 - [ ] add open video file button to main interface 
 - [ ] add change camera function 
 - [ ] abstract alogrithm class 
 - [ ] ica alogorithm
-- [ ] face move detection 
-- [ ] re-detect face and forehead after face move  
+- [x] green alogrithm
+- [x] face move detection 
+- [x] re-detect face and forehead after face move  
 - [ ] ssr alogorthm 
-  
+- [x] auto-save-data  

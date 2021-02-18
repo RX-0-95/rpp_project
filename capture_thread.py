@@ -156,6 +156,8 @@ class CaptureThread(qtc.QThread):
         self.timer.start()
         # markDetector = cv2.face.createFacemarkLBF();
         motionWasteFrame = 0
+        frame_count = 0
+        frame_list = [] 
         while self.running:
 
             if self.playVideo and ( 
@@ -172,29 +174,9 @@ class CaptureThread(qtc.QThread):
                 # Temparty: rotate frame -90 degree
                 # tmp_frame = cv2.rotate(tmp_frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
                 #######################
-                """
+               
                 if ret:
-                    if(self.maskFlag>0):
-                        face_find, face_rects = self.__detectFaces(tmp_frame)
-                            
-                    tmp_frame = cv2.cvtColor(tmp_frame, cv2.COLOR_BGR2RGB)
-                    
-                    if face_find:
-                        x,y,w,h = face_rects[0]
-                        tmp_face_crop= tmp_frame[y:y+h, x:x+w]
-                        #print(type(tmp_face_crop))
-                        if (self.isMaskOn(self.MASK_TYPE.RPPG)):
-                            rppgAlg.s2r(tmp_face_crop)
-                    self.dataLock.lock()
-                    frame = tmp_frame
-                    face_crop = tmp_face_crop
-                    self.dataLock.unlock()
-                    self.frameCapturedSgn.emit(frame)
-                    if face_find:
-                        self.faceCapturedSgn.emit(face_crop)
-                    """
-                if ret:
-
+                    frame_count += 1 
                     ##TODO:detect face and find the rect with the landmakr##
                     if self.maskFlag > 0 and not self.findFace:
                         # if self.maskFlag > 0  and self.timer.timeCounter() > 1.0:
@@ -214,18 +196,12 @@ class CaptureThread(qtc.QThread):
                             self.frame_mean = self._getFrameRectsMean(
                                 self.faceRppgAreaRects
                             )
-                            self.rppgAlg.ica(self.frame_mean)
+                            if self.rppgAlg.ica(self.frame_mean):
+                                frame_list.append(frame_count)
                             self.fftwindow.update_plot(
                                 self.rppgAlg.freqs, self.rppgAlg.fft,self.rppgAlg.bpm,self.rppgAlg.gap
                             )
-                            """
-                            self.ln.set_xdata(self.rppgAlg.plt_idx)
-                            self.ln.set_ydata(self.rppgAlg.fft)
-                            self.ax.relim()
-                            self.ax.autoscale_view()
-                            self.fig.canvas.draw()
-                            self.fig.canvas.flush_events()
-                            """
+                           
                         else:
                             motionWasteFrame -= 1
                             print("waste frame")
@@ -244,10 +220,18 @@ class CaptureThread(qtc.QThread):
                 else:
                     self.running = False
                 self.timer.timeCounterReset()
-
-        with open("output.csv", "w") as csvfile:
+        filename = "output.csv"
+        if self.videoMode:
+            filename = qtc.QFileInfo(self.videoPath).baseName()
+            filename = str(filename) + "_output.csv" 
+        with open(filename, "w", newline='') as csvfile:
+            print("Writing to csv file")
+            rows = list(zip(frame_list, self.rppgAlg.bmpdatas))
             wr = csv.writer(csvfile, dialect="excel")
-            wr.writerow(self.rppgAlg.bmpdatas)
+            for row in rows:
+                wr.writerow(row)
+            #wr.writerow(frame_list)
+            #wr.writerow(self.rppgAlg.bmpdatas)
 
         cap.release()
         #cv2.destroyAllWindows()
@@ -300,7 +284,7 @@ class CaptureThread(qtc.QThread):
                 if self.isMaskOn(self.MASK_TYPE.RECTANGLE):
                     self._drawRect(self.faceRect)
 
-        if self.isMaskOn(self.MASK_TYPE.LANDMAKS):
+        if self.isMaskOn(self.MASK_TYPE.LANDMAKS) or self.isMaskOn(self.MASK_TYPE.RPPG):
             if len(faces_list):
                 ret, land_mark = self.markDetector.fit(self.frame, faces)
                 mark = land_mark[face_index][0]
@@ -332,7 +316,7 @@ class CaptureThread(qtc.QThread):
             c1 = np.mean(imagedata[:, :, 0])
             c2 = np.mean(imagedata[:, :, 1])
             c3 = np.mean(imagedata[:, :, 2])
-            mean += (c1 + c2 + c3) / 3.0
+            #mean += (c1 + c2 + c3) / 3.0
             mean += (c2) / 1.0
         mean = mean / (len(rects))
         return mean
@@ -370,8 +354,8 @@ class CaptureThread(qtc.QThread):
         height1 = int(face_mark[3][1] - face_mark[2][1])
 
         rect1 = [x1, y1, width1, height1]
-
         x2 = int(face_mark[11][0])
+        #x2 = int(0.5*(face_mark[12][0]+face_mark[11][0]))
         y2 = int(face_mark[14][1])
         width2 = int(face_mark[11][0] - face_mark[10][0])
         height2 = int(face_mark[13][1] - face_mark[14][1])

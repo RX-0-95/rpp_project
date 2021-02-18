@@ -109,30 +109,24 @@ class MainWindow(qtw.QMainWindow):
         self.exitAction = qtw.QAction("E&xit")
         self.fileMenu.addAction(self.exitAction)
 
-    ############TODO: add file open function#######################
+    
     def __openFile(self):
-        print("Open Video File")
-        #dialog= qtw.QFileDialog(self, "Open Folder")
-        #dialog.setDirectory(self.book_folder_path)
-        #dialog.setAcceptMode(qtw.QFileDialog.AcceptOpen)
-        #dialog.setFileMode(qtw.QFileDialog.AnyFile)
-        fileName, _ = qtw.QFileDialog.getOpenFileName(self, "Open Movie",
-        qtc.QDir.homePath())
-        print(fileName)
-        #send the file name to the capture thread 
-        for i in range(0, ct.MASK_TYPE.MASKCOUNT):
-            self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
-        
-        if self.capturer != None:
-            self.capturer.setRunning(False)
-        self.capturer = ct.fromVideoPath(fileName,self.lock,fftwindow = self.fftwindow)
-        self.capturer.frameCapturedSgn.connect(self.__updateFrame)
-        self.startVideoPlayBtn.setChecked(False)
-        self.startVideoPlayBtn.toggled.connect(self.capturer.tooglePlayVideo)
-        self.startVideoPlayBtn.toggled.connect(lambda x : self.__onStartVideoBtnToggle(x))
-        self.capturer.start()
-        self.mainLabel.setText("Playing video" + str(fileName))
-        
+        fileName, _ = qtw.QFileDialog.getOpenFileName(self, "Open Movie",qtc.QDir.homePath())
+        if fileName:
+            #send the file name to the capture thread 
+            for i in range(0, ct.MASK_TYPE.MASKCOUNT):
+                self.maskCheckBox[i].setCheckState(qtc.Qt.Unchecked)
+            
+            if self.capturer != None:
+                self.capturer.setRunning(False)
+            self.capturer = ct.fromVideoPath(fileName,self.lock,fftwindow = self.fftwindow)
+            self.capturer.frameCapturedSgn.connect(self.__updateFrame)
+            self.startVideoPlayBtn.setChecked(False)
+            self.startVideoPlayBtn.toggled.connect(self.capturer.tooglePlayVideo)
+            self.startVideoPlayBtn.toggled.connect(lambda x : self.__onStartVideoBtnToggle(x))
+            self.capturer.start()
+            self.mainLabel.setText("Playing video" + str(fileName))
+            
 
 
        

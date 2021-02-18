@@ -9,7 +9,8 @@ import numpy as np
 from timer import *
 import cv2
 import matplotlib.pyplot as plt
-from sklearn.decomposition import FastICA
+
+# from sklearn.decomposition import FastICA
 
 # Class rppg is a singleton
 # part of the code from ##TODO: citation
@@ -17,6 +18,7 @@ from sklearn.decomposition import FastICA
 MIN_BMP = 40
 MAX_BMP = 200
 MAX_BUFFER_SIZE = 900
+WINDOW_SIZE = 30
 
 
 class rppg:
@@ -43,7 +45,7 @@ class rppg:
             self.fft = []
             self.bpms = []
             self.bpm = 0
-            self.gap = 0 
+            self.gap = 0
             self.idx = 1
             self.frame_step = 0
             self.videoMode = False
@@ -55,6 +57,7 @@ class rppg:
         self.cameraMode = False
         self.videoMode = True
         self.frame_step = frame_step
+        self.max_buffer_size = WINDOW_SIZE * int(1.0 / frame_step)
 
     def setCameraMode(self):
         self.cameraMode = True
@@ -78,6 +81,7 @@ class rppg:
         None
 
     def ica(self, imagedata):
+
         if self.cameraMode:
             self.times.append(self.timer.timeSinceStart())
         elif self.videoMode:
@@ -103,7 +107,7 @@ class rppg:
 
         frame_data = np.array(self.frame_buffers)
 
-        if buffer_len > 10:
+        if buffer_len > 20:
             self.output_dim = frame_data.shape[0]
             # print(self.times)
             fps = float(buffer_len) / (self.times[-1] - self.times[0])
@@ -133,15 +137,13 @@ class rppg:
             idx = np.where((freqs > MIN_BMP) & (freqs < MAX_BMP))
 
             pruned = self.fft[idx]
-
             phase = phase[idx]
-            ##for plot
-            self.plt_idx = idx
 
             ##end draw fft
             pfreq = freqs[idx]
             self.freqs = pfreq
             self.fft = pruned
+
             """
             print("++++++++++++idx+++++++++++")
             print(self.idx)
@@ -150,10 +152,12 @@ class rppg:
             print("++++++++++++freqs++++++++++++")
             print(self.freqs)
             """
-            if len(pruned) >= 15:
-                for i in range(0,15):
-                    pruned[i]  = 0
-            
+            print("legth of ")
+            print(len(pruned))
+            if len(pruned) >= 16:
+
+                for i in range(0, 16):
+                    pruned[i] = 0.0
 
             idx2 = np.argmax(pruned)
             t = (np.sin(phase[idx2]) + 1.0) / 2.0
@@ -173,8 +177,9 @@ class rppg:
                 print(text)
 
             self.bmpdatas.append(self.bpm)
-
-     
+            return True
+        else: 
+            return False 
 
     def getMean(self, imagedata):
         # print("Image Data size")
