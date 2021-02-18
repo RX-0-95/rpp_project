@@ -3,7 +3,7 @@
 ## About the project 
 A PyQT GUI project use ICA algorithms to remotely detect human heart rate. The average error in effective detection period is +-2 bpms. The program is able to auto detect face and auto redetect face when face moved during detection. The prgram can either perform real time detection though webcam or detect heart rate though a video. 
 
-## How to run the prgrame
+## How to run the prgram
 
 1. Set python virtual evn (recommand not necessary)
 
