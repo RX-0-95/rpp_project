@@ -1,28 +1,32 @@
-## Dependency
-### For windows 
-pip install pyqt5
+# PyQT based RPPG project 
 
-pip install opencv-contrib-python
+## About the project 
+A PyQT GUI project use ICA algorithms to remotely detect human heart rate. The average error in effective detection period is +-2 bpms. The program is able to auto detect face and auto redetect face when face moved during detection. The prgram can either perform real time detection though webcam or detect heart rate though a video. 
 
-### For macos 
-pip install pyqt5
+## How to run the prgrame
 
-pip install opencv-contrib-python-headless 
+1. Set python virtual evn (recommand not necessary)
 
-## Run the project 
-run the run.py
+
+2. install all packages in installed_packages.txt or simply use command 
+
+            pip install -r requirements.txt 
+
+3. In terminal 
+
+            python3 run.py 
 
 
 
 ## To Do 
 - [x] forehead detection 
-- [ ] whole face crop 
-- [ ] App open camera button to main interface 
-- [ ] add open video file button to main interface 
-- [ ] add change camera function 
-- [ ] abstract alogrithm class 
-- [ ] ica alogorithm
-- [ ] face move detection 
-- [ ] re-detect face and forehead after face move  
+- [x] whole face crop 
+- [x] App open camera button to main interface 
+- [x] add open video file button to main interface 
+- [x] add change camera function 
+- [x] abstract alogrithm class 
+- [x] ica alogorithm
+- [x] face move detection 
+- [x] re-detect face and forehead after face move  
 - [ ] ssr alogorthm 
-- [ ] video mode 
+- [x] video mode 
