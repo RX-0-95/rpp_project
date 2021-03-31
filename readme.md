@@ -18,7 +18,7 @@ A PyQT GUI project use ICA algorithms to remotely detect human heart rate. The a
 
 
 ## User interface 
-![](image/../../image/UI.png)
+![](image/UI.png)
 
 ## To Do 
 - [x] forehead detection 
